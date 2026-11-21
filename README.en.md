@@ -16,7 +16,7 @@ properties.
 | Effect ID | `mos.rain` |
 | Display name | mos_rain |
 | Category | MOS Deform |
-| Version | 2.0.0 |
+| Version | 2.1.0 |
 | Author | MOSSLS |
 | Plug-in ABI | 1 (`ec_api_version` = 1) |
 | manifest schema | 2 (parameter groups) |
@@ -154,12 +154,14 @@ fast one the wiggle. Half-width is `rad_nom × (0.40 + 0.35 × hash)`, modulated
 along the run by two more sines (frequencies `0.023` and `0.0065`) down to
 22 %–100 %. The cross-section is a semicircle `sqrt(1 − q²)`, not a dome: the
 edges are steeper, which gives a crisp dark contour and a lit edge. Height is
-about 0.6–0.9× the width, times a 0.82–1.0 ripple along the run, so streams
-thicken and thin, rise and fall.
+normalized to 0.85–1.0 in the same field units as beads, which lets the isosurface
+join a bead and a stream into one track; a 0.82–1.0 ripple along the run makes
+streams thicken and thin, rise and fall. The cross-section is a paraboloid
+`1 − q²`.
 
 **6. Bead nodes and forks.** A bead grows on the stream every 42–97 px (about
 75 % of the time), with a radius 1.15–1.90× the local half-width, stretched
-1.12× vertically; screen blending turns the run into a “thick–thin–thick” track
+1.12× vertically; field accumulation turns the run into a “thick–thin–thick” track
 instead of a constant band. About 55 % of streams longer than 80 px fork: a
 branch leaves the main run, drifts sideways at `0.32 × distance travelled`,
 starts at 55 % of the width and tapers to 35 %, forming the Y-shaped network of
@@ -224,7 +226,7 @@ compositing:
 | Resolution | Default | Dense / big beads | Mist only | Frost 65 % |
 | --- | --- | --- | --- | --- |
 | 960×540 | 56–70 ms | 70–95 ms | ~55 ms | 90–110 ms |
-| 1920×1080 | 230–270 ms | ~320 ms | — | — |
+| 1920×1080 | 227–260 ms | ~320 ms | — | — |
 
 (“Dense / big beads” = high `streak` + high `density`, or `size` above 70.)
 
@@ -309,7 +311,9 @@ Output goes to `tests/out/engine/`: `rain-default.png`, `rain-streak.png`,
 - Streams are analytic ridges in a 2D height field, not a fluid sim. Forks, bead
   nodes and width variation are procedural; watch the same patch long enough and
   the repetition shows.
-- Beads are elliptical domes merged by screen blending; they never truly stretch
+- Beads are elliptical domes merged into irregular puddles by field accumulation
+  and a soft isosurface; there is no surface-tension or fluid simulation, so they
+  never truly stretch
   into irregular puddles or filaments.
 - Very dense streams overlap into a single sheet; lower `density` when `streak`
   is high and let the tracks carry the frame.
