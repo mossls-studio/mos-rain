@@ -237,8 +237,8 @@ function loadPhoto(w, h) {
 function baseParams() {
   return {
     amount: 120,
-    size: 55,
-    density: 55,
+    size: 50,
+    density: 48,
     streak: 35,
     trail: 40,
     mist: 50,

@@ -247,7 +247,13 @@ unsafe fn build_height(
             let seed =
                 (gx as u32).wrapping_mul(0x9e37_79b9) ^ (gy as u32).wrapping_mul(0x85eb_ca6b);
             let h0 = hash_u32(seed);
-            if unit(h0) > raw_thresh {
+            // 粗网格留白：真实雨天的玻璃总有几块是干的，不是整面气泡膜。
+            let cgx = gx >> 2;
+            let cgy = gy >> 2;
+            let cm = unit(hash_u32(
+                (cgx as u32).wrapping_mul(0x27d4_eb2d) ^ (cgy as u32).wrapping_mul(0x1656_67b1),
+            ));
+            if unit(h0) > raw_thresh || cm > 0.35 + 0.65 * density01 {
                 gx += 1;
                 continue;
             }
@@ -258,11 +264,11 @@ unsafe fn build_height(
             let h5 = hash_u32(h4 ^ 0x2545_f491);
             let h6 = hash_u32(h5.wrapping_add(0x6a09_e667));
 
-            let jx = (unit(h1) - 0.5) * 0.88;
-            let jy = (unit(h2) - 0.5) * 0.88;
+            let jx = (unit(h1) - 0.5) * 1.02;
+            let jy = (unit(h2) - 0.5) * 1.02;
             let cx = (gx as f32 + 0.5 + jx) * cell;
             let mut cy = (gy as f32 + 0.5 + jy) * cell;
-            let r = rad_nom * (0.55 + 0.75 * unit(h3));
+            let r = rad_nom * (0.42 + 1.05 * unit(h3)) * (0.75 + 0.55 * cm);
             let is_streak = unit(h4) < streak01;
 
             if is_streak {

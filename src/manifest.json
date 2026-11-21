@@ -7,22 +7,179 @@
   "author": "MOSSLS",
   "description": "真实的雨天玻璃：细密水雾、大小不一的圆水珠，以及会缓慢下滑的长条雨滴和拖尾。分布、密度、大小、长条比例、拖尾长度各自独立，带色散、高光与边缘光。",
   "params": [
-    { "id": "amount", "name": "折射强度 %", "type": "slider", "default": 120, "min": 0, "max": 300, "decimals": 1, "group": "雨滴" },
-    { "id": "size", "name": "雨滴大小 %", "type": "slider", "default": 55, "min": 0, "max": 100, "decimals": 1, "group": "雨滴" },
-    { "id": "density", "name": "分布密度 %", "type": "slider", "default": 55, "min": 0, "max": 100, "decimals": 1, "group": "雨滴" },
-    { "id": "streak", "name": "长条雨滴 %", "type": "slider", "default": 35, "min": 0, "max": 100, "decimals": 1, "group": "雨滴" },
-    { "id": "trail", "name": "拖尾长度 %", "type": "slider", "default": 40, "min": 0, "max": 100, "decimals": 1, "group": "雨滴" },
-    { "id": "mist", "name": "细小雨滴 %", "type": "slider", "default": 50, "min": 0, "max": 100, "decimals": 1, "group": "雨滴" },
-    { "id": "speed", "name": "流速 %", "type": "slider", "default": 25, "min": 0, "max": 200, "decimals": 1, "group": "雨滴" },
-    { "id": "dispersion", "name": "色散 %", "type": "slider", "default": 12, "min": 0, "max": 100, "decimals": 1, "group": "质感" },
-    { "id": "highlight", "name": "高光 %", "type": "slider", "default": 110, "min": 0, "max": 300, "decimals": 1, "group": "质感" },
-    { "id": "rim", "name": "边缘光 %", "type": "slider", "default": 50, "min": 0, "max": 300, "decimals": 1, "group": "质感" },
-    { "id": "light_angle", "name": "光照角度", "type": "angle", "default": 135, "group": "质感" },
-    { "id": "frost", "name": "磨砂 %", "type": "slider", "default": 0, "min": 0, "max": 100, "decimals": 1, "group": "质感" },
-    { "id": "tint", "name": "色调", "type": "color", "default": [0.72, 0.88, 1.0, 1.0], "group": "质感" },
-    { "id": "tint_amount", "name": "染色 %", "type": "slider", "default": 0, "min": 0, "max": 100, "decimals": 1, "group": "质感" },
-    { "id": "sampling", "name": "采样", "type": "popup", "options": ["双线性", "双三次", "最近邻"], "default": 0, "group": "输出" },
-    { "id": "edge_mode", "name": "边缘", "type": "popup", "options": ["拉伸", "重复", "镜像", "透明"], "default": 0, "group": "输出" },
-    { "id": "mix", "name": "混合 %", "type": "slider", "default": 100, "min": 0, "max": 100, "decimals": 0, "group": "输出" }
+    {
+      "id": "amount",
+      "name": "折射强度 %",
+      "type": "slider",
+      "default": 120,
+      "min": 0,
+      "max": 300,
+      "decimals": 1,
+      "group": "雨滴"
+    },
+    {
+      "id": "size",
+      "name": "雨滴大小 %",
+      "type": "slider",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "group": "雨滴"
+    },
+    {
+      "id": "density",
+      "name": "分布密度 %",
+      "type": "slider",
+      "default": 48,
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "group": "雨滴"
+    },
+    {
+      "id": "streak",
+      "name": "长条雨滴 %",
+      "type": "slider",
+      "default": 35,
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "group": "雨滴"
+    },
+    {
+      "id": "trail",
+      "name": "拖尾长度 %",
+      "type": "slider",
+      "default": 40,
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "group": "雨滴"
+    },
+    {
+      "id": "mist",
+      "name": "细小雨滴 %",
+      "type": "slider",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "group": "雨滴"
+    },
+    {
+      "id": "speed",
+      "name": "流速 %",
+      "type": "slider",
+      "default": 25,
+      "min": 0,
+      "max": 200,
+      "decimals": 1,
+      "group": "雨滴"
+    },
+    {
+      "id": "dispersion",
+      "name": "色散 %",
+      "type": "slider",
+      "default": 12,
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "group": "质感"
+    },
+    {
+      "id": "highlight",
+      "name": "高光 %",
+      "type": "slider",
+      "default": 110,
+      "min": 0,
+      "max": 300,
+      "decimals": 1,
+      "group": "质感"
+    },
+    {
+      "id": "rim",
+      "name": "边缘光 %",
+      "type": "slider",
+      "default": 50,
+      "min": 0,
+      "max": 300,
+      "decimals": 1,
+      "group": "质感"
+    },
+    {
+      "id": "light_angle",
+      "name": "光照角度",
+      "type": "angle",
+      "default": 135,
+      "group": "质感"
+    },
+    {
+      "id": "frost",
+      "name": "磨砂 %",
+      "type": "slider",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "group": "质感"
+    },
+    {
+      "id": "tint",
+      "name": "色调",
+      "type": "color",
+      "default": [
+        0.72,
+        0.88,
+        1.0,
+        1.0
+      ],
+      "group": "质感"
+    },
+    {
+      "id": "tint_amount",
+      "name": "染色 %",
+      "type": "slider",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "decimals": 1,
+      "group": "质感"
+    },
+    {
+      "id": "sampling",
+      "name": "采样",
+      "type": "popup",
+      "options": [
+        "双线性",
+        "双三次",
+        "最近邻"
+      ],
+      "default": 0,
+      "group": "输出"
+    },
+    {
+      "id": "edge_mode",
+      "name": "边缘",
+      "type": "popup",
+      "options": [
+        "拉伸",
+        "重复",
+        "镜像",
+        "透明"
+      ],
+      "default": 0,
+      "group": "输出"
+    },
+    {
+      "id": "mix",
+      "name": "混合 %",
+      "type": "slider",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "decimals": 0,
+      "group": "输出"
+    }
   ]
 }
