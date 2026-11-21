@@ -3,15 +3,15 @@
   "id": "mos.rain",
   "name": "mos_雨滴",
   "category": "MOS 形变",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "author": "MOSSLS",
-  "description": "真实的雨天玻璃：细密水雾铺底，大小不一的水珠，少量贯穿画面的蜿蜒水流；水流上串着大水珠，靠近的水珠会融成不规则水洼。带色散、锐高光、暗轮廓与磨砂。",
+  "description": "生成式雨天玻璃：水珠从零出现，小水珠偶尔下滑，积水多了变成持续下落的长水流；细雾瞬间出现后慢慢淡出。靠近的水珠会融成不规则水洼，带硬接触线、锐高光、色散与磨砂。",
   "params": [
     {
       "id": "amount",
       "name": "折射强度 %",
       "type": "slider",
-      "default": 120,
+      "default": 140,
       "min": 0,
       "max": 300,
       "decimals": 1,
@@ -31,7 +31,7 @@
       "id": "density",
       "name": "分布密度 %",
       "type": "slider",
-      "default": 50,
+      "default": 40,
       "min": 0,
       "max": 100,
       "decimals": 1,
@@ -180,6 +180,26 @@
       "max": 100,
       "decimals": 0,
       "group": "输出"
+    },
+    {
+      "id": "seed",
+      "name": "分布种子",
+      "type": "slider",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "decimals": 0,
+      "group": "随机"
+    },
+    {
+      "id": "time_offset",
+      "name": "起始时间 秒",
+      "type": "slider",
+      "default": 4,
+      "min": 0,
+      "max": 20,
+      "decimals": 1,
+      "group": "随机"
     }
   ]
 }

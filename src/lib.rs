@@ -46,7 +46,7 @@ pub extern "C" fn ec_alloc(n: i32) -> i32 {
 
 // ---------------------------------------------------------------- 雨滴
 
-/// 一滴水：有限斜率的抛物面穹顶，边缘保留斜率，才有暗轮廓和锐高光。
+/// 一滴水：有限斜率的抛物面穹顶，边缘保留斜率，才有硬接触线和锐高光。
 #[inline]
 unsafe fn splat(
     hb: *mut f32,
@@ -63,10 +63,6 @@ unsafe fn splat(
     if ra < 0.45 || rb < 0.45 || vh <= 0.0 {
         return;
     }
-    // 支撑半径比可见半径大一圈：阈值等值面会把它收回来，
-    // 两颗靠近的水珠在场里先连上，再一起被阈值切出“脖子”。
-    let ra = ra * 1.15;
-    let rb = rb * 1.15;
     let ia = 1.0 / (ra * ra);
     let ib = 1.0 / (rb * rb);
     let x0f = floorf(cx - ra);
@@ -90,8 +86,7 @@ unsafe fn splat(
             let dx = px as f32 - cx;
             let q2 = dx * dx * ia + dy2;
             if q2 < 1.0 {
-                let fall = 1.0 - q2;
-                let v = fall * fall * vh;
+                let v = (1.0 - q2) * vh;
                 *hb.add(row + px) += v;
                 let sp = sb.add(row + px);
                 if sr > *sp {
@@ -117,7 +112,7 @@ unsafe fn splat_mist(
     r: f32,
     vh: f32,
 ) {
-    if r < 0.4 {
+    if r < 0.4 || vh <= 0.0 {
         return;
     }
     let x0 = maxf(0.0, floorf(cx - r)) as usize;
@@ -136,14 +131,11 @@ unsafe fn splat_mist(
             if q2 < 1.0 {
                 let slot = hb.add(row + px);
                 let sp = sb.add(row + px);
-                // 水珠/水流表面不叠雾滴；影响区边缘的雾滴压低高度，
-                // 既不留一圈没雾的暗环，也不会把镜面高光打成碎钻。
-                if *slot > 0.40 {
+                if *slot > 0.40 || *sp > 3.0 {
                     px += 1;
                     continue;
                 }
-                let near = if *sp > 2.5 { 0.25 } else { 1.0 };
-                let v = (1.0 - q2) * vh * near;
+                let v = (1.0 - q2) * vh;
                 let old = *slot;
                 *slot = old + v - old * v;
                 if r > *sp {
@@ -157,96 +149,56 @@ unsafe fn splat_mist(
 }
 
 #[inline]
-fn stream_x(y: f32, x0: f32, phase: f32, amp: f32) -> f32 {
-    x0 + amp * (0.62 * fsin(y * 0.017 + phase) + 0.38 * fsin(y * 0.043 + phase * 1.7))
+fn fract01(v: f32) -> f32 {
+    let f = v - floorf(v);
+    if f < 0.0 {
+        f + 1.0
+    } else {
+        f
+    }
 }
 
 #[inline]
-fn stream_w(y: f32, width: f32, phase: f32, drift: f32) -> f32 {
-    let yy = y + drift;
-    let body = 0.55 + 0.45 * fsin(yy * 0.023 + phase * 2.3) * fsin(yy * 0.023 + phase * 2.3);
-    let slow = 0.78 + 0.22 * fsin(yy * 0.0065 + phase * 0.9);
-    maxf(width * body * slow, width * 0.22)
+fn fabsf(v: f32) -> f32 {
+    if v < 0.0 {
+        -v
+    } else {
+        v
+    }
 }
 
-/// 一条水流：半圆截面（sqrt(1-q²)），宽度/高度沿程起伏。
-/// 比穹顶陡，边缘会产生清晰的暗轮廓 + 亮边，像真正的水流而不是软带。
-unsafe fn stream(
-    hb: *mut f32,
-    sb: *mut f32,
-    gw: usize,
-    gh: usize,
+const MAX_STREAMS: usize = 20;
+
+/// 一条下雨水流的静态描述。头在往下走，轨迹相对头固定，
+/// 所以整条水痕会真正向下平移，而不是只在原地摆动。
+#[derive(Clone, Copy)]
+struct StreamDesc {
     x0: f32,
     phase: f32,
     amp: f32,
     width: f32,
-    height_scale: f32,
-    y_top: f32,
-    y_bottom: f32,
-    drift: f32,
-) {
-    let y0 = maxf(0.0, floorf(y_top)) as usize;
-    let y1 = minf((gh - 1) as f32, ceilf(y_bottom)) as usize;
-    let mut py = y0;
-    while py <= y1 {
-        let yf = py as f32;
-        let xc = stream_x(yf, x0, phase, amp);
-        let w = stream_w(yf, width, phase, drift);
-        let hgt = height_scale * (0.82 + 0.18 * fsin(yf * 0.019 + phase * 1.4));
-        let ia = 1.0 / (w * w);
-        let x0i = maxf(0.0, floorf(xc - w)) as usize;
-        let x1i = minf((gw - 1) as f32, ceilf(xc + w)) as usize;
-        let row = py * gw;
-        let mut px = x0i;
-        while px <= x1i {
-            let dx = px as f32 - xc;
-            let q2 = dx * dx * ia;
-            if q2 < 1.0 {
-                let v = (1.0 - q2) * hgt;
-                *hb.add(row + px) += v;
-                let sp = sb.add(row + px);
-                if w * 1.5 > *sp {
-                    *sp = w * 1.5;
-                }
-            }
-            px += 1;
-        }
-        py += 1;
-    }
+    head: f32,
+    len: f32,
+    grow: f32,
 }
 
-/// 3×3 盒式低通：只压 1px 的法线噪声，不改变水珠形状。
-unsafe fn blur3(hb: *mut f32, tmp: *mut f32, gw: usize, gh: usize) {
-    let mut y = 0;
-    while y < gh {
-        let row = y * gw;
-        let mut x = 0;
-        while x < gw {
-            let l = if x > 0 { x - 1 } else { x };
-            let r = if x + 1 < gw { x + 1 } else { x };
-            *tmp.add(row + x) =
-                (*hb.add(row + l) + *hb.add(row + x) + *hb.add(row + r)) * (1.0 / 3.0);
-            x += 1;
-        }
-        y += 1;
-    }
-    y = 0;
-    while y < gh {
-        let up = if y > 0 { y - 1 } else { y };
-        let dn = if y + 1 < gh { y + 1 } else { y };
-        let row = y * gw;
-        let mut x = 0;
-        while x < gw {
-            *hb.add(row + x) =
-                (*tmp.add(up * gw + x) + *tmp.add(row + x) + *tmp.add(dn * gw + x)) * (1.0 / 3.0);
-            x += 1;
-        }
-        y += 1;
-    }
+#[inline]
+fn stream_dx(d: f32, phase: f32, amp: f32) -> f32 {
+    amp * (0.62 * fsin(d * 0.028 + phase) + 0.38 * fsin(d * 0.009 + phase * 1.7))
 }
 
-/// 生成雨滴高度场。三层：细雾、抖动网格上的水珠、贯穿画面的长水流。
-/// 水流上每隔一段长一颗大水珠，screen 叠加后形成参考图那种粗细不均的水痕。
+#[inline]
+fn stream_w(d: f32, len: f32, width: f32) -> f32 {
+    let t = clamp01(d / maxf(len, 1.0));
+    // 头颈细、中段略鼓、尾端收细：水痕是细线，头是一颗珠。
+    width * (0.35 + 0.20 * (1.0 - t))
+}
+
+/// 生成式雨滴场。
+///
+/// 每颗水珠/每条水流都有出生相位和寿命：小水珠瞬间出现，停一会、偶尔往下
+/// 滑一截，最后淡出；水流是一颗带头的大水珠持续下落，身后拖着它走过的轨迹，
+/// 轨迹上的节点水珠跟着头一起走。靠近的水在场上相加，再取硬等值面，融成一片。
 unsafe fn build_height(
     hb: *mut f32,
     sb: *mut f32,
@@ -258,6 +210,7 @@ unsafe fn build_height(
     trail01: f32,
     mist01: f32,
     speed: f32,
+    seed: f32,
     time: f32,
 ) -> (f32, f32, f32) {
     let wf = gw as f32;
@@ -271,29 +224,81 @@ unsafe fn build_height(
         i += 1;
     }
 
+    let salt = (seed * 1000.0) as u32;
     let cell = maxf(8.0, min_dim * 0.058);
     let rad_base = 0.20 + 0.55 * size01;
     let rad_nom = cell * rad_base * 0.82;
-    let drift = time * speed * 0.6;
+    let raw_thresh = 0.10 + 0.90 * density01;
+    let flow_speed = 35.0 + speed * 2.2;
 
-    // ---- 1. 细雾最后再叠（见函数末尾），不参与等值面。
+    // ---- 先算好水流：水珠要靠它判断有没有被“带走”。
+    let mut descs = [StreamDesc {
+        x0: 0.0,
+        phase: 0.0,
+        amp: 0.0,
+        width: 0.0,
+        head: 0.0,
+        len: 0.0,
+        grow: 0.0,
+    }; MAX_STREAMS];
+    let count = minf(2.0 + streak01 * 12.0, MAX_STREAMS as f32) as usize;
+    let mut s = 0;
+    while s < count {
+        let h0 = hash_u32(0x51ed_2701u32.wrapping_add((s as u32).wrapping_mul(0x9e37_79b9)) ^ salt);
+        let h1 = hash_u32(h0 ^ 0xbb67_ae85);
+        let h2 = hash_u32(h1.wrapping_add(0x3c6e_f372));
+        let h3 = hash_u32(h2 ^ 0x510e_527f);
+        let h4 = hash_u32(h3.wrapping_add(0x1f83_d9ab));
+        let h5 = hash_u32(h4 ^ 0x68e3_1da4);
 
-    // ---- 2. 中号水珠：抖动网格 + 粗网格留白
+        // 周期 = 走完画面 + 头尾余量所需时间；相位错开，雨才连续。
+        let cycle = 4.5 + 3.5 * unit(h4);
+        let birth = unit(h5) * 3.0;
+        let age = time - birth;
+        if age < 0.0 {
+            s += 1;
+            continue;
+        }
+        let ph = fract01(age / cycle);
+        let margin = 40.0 + rad_nom * 4.0;
+        let head = -margin + ph * (hf + 2.0 * margin);
+        // 出生初期还没走远，尾巴从 0 长出来；走久后尾巴封顶。
+        let age = ph * cycle;
+        let max_len = hf * (0.30 + 0.50 * trail01);
+        let len = minf(max_len, age * flow_speed);
+
+        // 出生时是一颗小水珠，吸饱水才长大、开始拖痕。
+        let grow = smoothstep01(clamp01(ph * 9.0));
+        descs[s] = StreamDesc {
+            x0: unit(h0) * wf,
+            phase: unit(h1) * TAU,
+            amp: rad_nom * (0.45 + 1.05 * unit(h2)),
+            width: rad_nom * (0.45 + 0.35 * unit(h3)),
+            head,
+            len,
+            grow,
+        };
+        s += 1;
+    }
+
+    // ---- 中号水珠：瞬间出现，停一会，偶尔向下滑一截，最后淡出。
     let inv_cell = 1.0 / cell;
     let gwi = ceilf(wf * inv_cell) as i32 + 1;
     let ghi = ceilf(hf * inv_cell) as i32 + 1;
-    let raw_thresh = 0.10 + 0.90 * density01;
     let mut gy = -1;
     while gy <= ghi {
         let mut gx = -1;
         while gx <= gwi {
-            let seed =
-                (gx as u32).wrapping_mul(0x9e37_79b9) ^ (gy as u32).wrapping_mul(0x85eb_ca6b);
-            let h0 = hash_u32(seed);
+            let seed0 = (gx as u32).wrapping_mul(0x9e37_79b9)
+                ^ (gy as u32).wrapping_mul(0x85eb_ca6b)
+                ^ salt;
+            let h0 = hash_u32(seed0);
             let cgx = gx >> 2;
             let cgy = gy >> 2;
             let cm = unit(hash_u32(
-                (cgx as u32).wrapping_mul(0x27d4_eb2d) ^ (cgy as u32).wrapping_mul(0x1656_67b1),
+                (cgx as u32).wrapping_mul(0x27d4_eb2d)
+                    ^ (cgy as u32).wrapping_mul(0x1656_67b1)
+                    ^ salt,
             ));
             if unit(h0) > raw_thresh || cm > 0.30 + 0.70 * density01 {
                 gx += 1;
@@ -303,139 +308,164 @@ unsafe fn build_height(
             let h2 = hash_u32(h1.wrapping_add(0x1234_5677));
             let h3 = hash_u32(h2 ^ 0x68e3_1da4);
             let h4 = hash_u32(h3.wrapping_add(0x7f4a_7c15));
+            let h5 = hash_u32(h4 ^ 0x2545_f491);
+            let h6 = hash_u32(h5.wrapping_add(0x6a09_e667));
+
             let jx = (unit(h1) - 0.5) * 1.05;
             let jy = (unit(h2) - 0.5) * 1.05;
-            let cx = (gx as f32 + 0.5 + jx) * cell;
-            let cy = (gy as f32 + 0.5 + jy) * cell;
+            let bx = (gx as f32 + 0.5 + jx) * cell;
+            let by = (gy as f32 + 0.5 + jy) * cell;
             let r = rad_nom * (0.38 + 0.95 * unit(h3)) * (0.72 + 0.55 * cm);
-            let teardrop = unit(h4) < 0.25;
-            let ra = r * (0.92 + 0.16 * unit(h1));
+
+            // 生命周期：0 处瞬间出现，0.55 开始下滑，0.85 后淡出。
+            let life = 2.4 + 3.6 * unit(h4);
+            let birth = unit(h5) * 3.0;
+            let age = time - birth;
+            if age < 0.0 {
+                gx += 1;
+                continue;
+            }
+            let ph = fract01(age / life);
+            let vis = 1.0 - smoothstep01(clamp01((ph - 0.82) * 5.5));
+            if vis <= 0.02 {
+                gx += 1;
+                continue;
+            }
+            let slide = smoothstep01(clamp01((ph - 0.55) * 3.3));
+            let cy = by + r * (0.35 + 0.95 * unit(h6)) * slide;
+
+            // 水流经过的水珠会被带走：落在水流带里就跳过。
+            let mut taken = false;
+            let mut si = 0;
+            while si < count {
+                let d = descs[si].head - cy;
+                if d > 0.0 && d < descs[si].len {
+                    let xc = descs[si].x0 + stream_dx(d, descs[si].phase, descs[si].amp);
+                    let w = stream_w(d, descs[si].len, descs[si].width);
+                    if fabsf(bx - xc) < w * 1.7 + 2.0 {
+                        taken = true;
+                        break;
+                    }
+                }
+                si += 1;
+            }
+            if taken {
+                gx += 1;
+                continue;
+            }
+
+            let teardrop = slide > 0.05;
+            let ra = r * (0.92 + 0.14 * unit(h1));
             let rb = if teardrop {
                 r * (1.22 + 0.22 * unit(h2))
             } else {
-                r * (0.92 + 0.16 * unit(h2))
+                r * (0.92 + 0.14 * unit(h2))
             };
-            let vh = 0.90 + 0.10 * unit(hash_u32(h4 ^ 0x2545_f491));
-            splat(hb, sb, gw, gh, cx, cy, ra, rb, vh, maxf(ra, rb));
+            let vh = 0.92 * vis;
+            splat(hb, sb, gw, gh, bx, cy, ra, rb, vh, maxf(ra, rb));
             gx += 1;
         }
         gy += 1;
     }
 
-    // ---- 3. 长水流
-    let count = (2.0 + streak01 * 12.0) as i32;
+    // ---- 长水流：头不停往下走，身后是它走过的轨迹。
     let mut s = 0;
     while s < count {
-        let hs = hash_u32(0x51ed_2701u32.wrapping_add((s as u32).wrapping_mul(0x9e37_79b9)));
-        let hs2 = hash_u32(hs ^ 0xbb67_ae85);
-        let hs3 = hash_u32(hs2.wrapping_add(0x3c6e_f372));
-        let hs4 = hash_u32(hs3 ^ 0x510e_527f);
-        let hs5 = hash_u32(hs4.wrapping_add(0x1f83_d9ab));
-
-        let x0 = unit(hs) * wf;
-        let phase = unit(hs2) * TAU;
-        let amp = rad_nom * (0.5 + 1.4 * unit(hs3));
-        let width = rad_nom * (0.40 + 0.35 * unit(hs4));
-        let hscale = 0.85 + 0.15 * unit(hs5);
-        let len = hf * (0.62 + 0.38 * trail01);
-        let top = -len * 0.28 + unit(hs2) * hf * 0.34;
-        let bottom = top + len;
-
-        stream(
-            hb, sb, gw, gh, x0, phase, amp, width, hscale, top, bottom, drift,
-        );
-
-        // 水流上的节点水珠：沿程每隔一段长一颗，和水流融成粗细不均的水痕。
-        let mut y = top + 12.0 + unit(hs4) * 40.0;
-        let step = 42.0 + unit(hs5) * 55.0;
-        let mut k = 0;
-        while y < bottom && k < 24 {
-            let hk = hash_u32(hs3.wrapping_add((k as u32).wrapping_mul(0x27d4_eb2d)));
-            if unit(hk) > 0.25 {
-                let x = stream_x(y, x0, phase, amp);
-                let w = stream_w(y - 0.0, width, phase, drift);
-                let r = w * (1.15 + 0.75 * unit(hash_u32(hk ^ 0x68e3_1da4)));
-                let vh = 0.95 + 0.05 * unit(hash_u32(hk ^ 0x1f83_d9ab));
-                splat(hb, sb, gw, gh, x, y, r * 0.95, r * 1.12, vh, r);
+        let dsc = &descs[s];
+        let y0 = maxf(0.0, floorf(dsc.head - dsc.len)) as usize;
+        let y1 = minf((gh - 1) as f32, ceilf(dsc.head)) as usize;
+        let mut py = y0;
+        while py <= y1 {
+            let yf = py as f32;
+            let d = dsc.head - yf;
+            let t = clamp01(d / maxf(dsc.len, 1.0));
+            let xc = dsc.x0 + stream_dx(d, dsc.phase, dsc.amp);
+            let w = stream_w(d, dsc.len, dsc.width);
+            let tail = smoothstep01(clamp01((1.0 - t) * 6.0));
+            let hgt = 1.30 * tail * dsc.grow;
+            let ia = 1.0 / (w * w);
+            let x0i = maxf(0.0, floorf(xc - w)) as usize;
+            let x1i = minf((gw - 1) as f32, ceilf(xc + w)) as usize;
+            let row = py * gw;
+            let mut px = x0i;
+            while px <= x1i {
+                let dx = px as f32 - xc;
+                let q2 = dx * dx * ia;
+                if q2 < 1.0 {
+                    *hb.add(row + px) += (1.0 - q2) * hgt;
+                    let sp = sb.add(row + px);
+                    if w * 1.5 > *sp {
+                        *sp = w * 1.5;
+                    }
+                }
+                px += 1;
             }
-            y += step;
-            k += 1;
+            py += 1;
         }
 
-        // 分叉：少数水流在中途分出一条更细的支流，形成参考图的 Y 形水网。
-        if unit(hs5) < 0.55 && len > 80.0 {
-            let by = top + len * (0.25 + 0.35 * unit(hs3));
-            let bx = stream_x(by, x0, phase, amp);
-            let bdir = if unit(hs4) < 0.5 { -1.0 } else { 1.0 };
-            let bw = width * 0.55;
-            let blen = len * (0.18 + 0.22 * unit(hs2));
-            let mut yy = by;
-            let yend = minf(by + blen, (gh - 1) as f32);
-            while yy < yend {
-                let t = (yy - by) / blen;
-                let xc = bx + bdir * (yy - by) * 0.32 + bw * 0.7 * fsin((yy - by) * 0.06 + phase);
-                let w = bw * (1.0 - 0.65 * t);
-                let hgt = hscale * 0.75;
-                let ia = 1.0 / (w * w);
-                let x0i = maxf(0.0, floorf(xc - w)) as usize;
-                let x1i = minf((gw - 1) as f32, ceilf(xc + w)) as usize;
-                let row = yy as usize * gw;
-                let mut px = x0i;
-                while px <= x1i {
-                    let dx = px as f32 - xc;
-                    let q2 = dx * dx * ia;
-                    if q2 < 1.0 {
-                        let v = (1.0 - q2) * hgt;
-                        *hb.add(row + px) += v;
-                        let sp = sb.add(row + px);
-                        if w * 1.4 > *sp {
-                            *sp = w * 1.4;
-                        }
-                    }
-                    px += 1;
-                }
-                yy += 1.0;
+        // 头：一颗被重力拽成泪滴的大水珠，位置随时间向下。
+        let hx = dsc.x0;
+        let hr = dsc.width * 1.70 * dsc.grow;
+        splat(hb, sb, gw, gh, hx, dsc.head, hr * 0.88, hr * 1.14, 1.0, hr);
+
+        // 轨迹上的节点水珠：跟着头一起走，所以看起来是整条水在往下流。
+        let mut k = 1;
+        while k <= 3 {
+            let d = k as f32 * (48.0 + dsc.width * 2.0);
+            if d < dsc.len {
+                let x = dsc.x0 + stream_dx(d, dsc.phase, dsc.amp);
+                let w = stream_w(d, dsc.len, dsc.width);
+                let r = w * (1.25 + 0.25 * unit(hash_u32(0x1234_5677 ^ (s as u32)))) * dsc.grow;
+                let y = dsc.head - d;
+                splat(hb, sb, gw, gh, x, y, r * 0.92, r * 1.10, 0.96, r);
             }
+            k += 1;
         }
         s += 1;
     }
 
-    // ---- 4. 几颗孤立的大水珠
-    let big = 2 + (unit(hash_u32(0x9e37_79b9)) * 4.0) as i32;
+    // ---- 2–5 颗孤立大水珠
+    let big = 2 + (unit(hash_u32(0x9e37_79b9 ^ salt)) * 4.0) as i32;
     let mut k = 0;
     while k < big {
-        let hk = hash_u32(0x7f4a_7c15u32.wrapping_add((k as u32).wrapping_mul(0x85eb_ca6b)));
+        let hk = hash_u32(0x7f4a_7c15u32.wrapping_add((k as u32).wrapping_mul(0x85eb_ca6b)) ^ salt);
         let hk2 = hash_u32(hk ^ 0x2545_f491);
+        if time < unit(hk2) * 3.0 {
+            k += 1;
+            continue;
+        }
         let x = unit(hk) * wf;
         let y = unit(hk2) * hf;
-        let r = rad_nom * (1.5 + 1.2 * unit(hash_u32(hk2 ^ 0x68e3_1da4)));
+        let r = rad_nom * (1.4 + 1.1 * unit(hash_u32(hk2 ^ 0x68e3_1da4)));
         splat(hb, sb, gw, gh, x, y, r * 0.92, r * 1.18, 1.0, r);
         k += 1;
     }
 
-    // 等值面：场里的重叠先连成一片，再统一切出高度。
-    // 两颗贴在一起的水珠之间会自然长出一条低矮的“脖子”，而不是两条硬边。
+    // 场直接就是高度：穹顶从中心到接触线一直是弯的，
+    // 边缘保留有限斜率，所以是一条干净的硬边，而不是“软坡 + 一刀切”。
+    // 重叠区的高度相加，两块水自然鼓成一个鞍形，融成一片。
     let mut i2 = 0;
     while i2 < n {
         let f = *hb.add(i2);
-        let v = clamp01(f * 1.05);
-        *hb.add(i2) = v * v * (3.0 - 2.0 * v);
+        *hb.add(i2) = minf(f, 1.15);
         i2 += 1;
     }
 
-    // ---- 1. 细密水雾
-    let cell_m = maxf(3.0, cell * 0.18);
+    // ---- 细雾：最后叠。出生瞬间就有，之后慢慢降低不透明度。
+    let cell_m = maxf(3.0, cell * 0.16);
     let inv_cm = 1.0 / cell_m;
     let gwm = ceilf(wf * inv_cm) as i32 + 1;
     let ghm = ceilf(hf * inv_cm) as i32 + 1;
-    let mut gy = -1;
+    gy = -1;
     while gy <= ghm {
         let mut gx = -1;
         while gx <= gwm {
-            let seed = (gx as u32).wrapping_mul(0x9e37_79b9)
-                ^ (gy as u32).wrapping_mul(0x85eb_ca6b)
-                ^ 0x6a09_e667;
-            let h0 = hash_u32(seed);
+            let h0 = hash_u32(
+                (gx as u32).wrapping_mul(0x9e37_79b9)
+                    ^ (gy as u32).wrapping_mul(0x85eb_ca6b)
+                    ^ 0x6a09_e667
+                    ^ salt,
+            );
             if unit(h0) > mist01 {
                 gx += 1;
                 continue;
@@ -443,10 +473,24 @@ unsafe fn build_height(
             let h1 = hash_u32(h0 ^ 0xbb67_ae85);
             let h2 = hash_u32(h1.wrapping_add(0x3c6e_f372));
             let h3 = hash_u32(h2 ^ 0x510e_527f);
+            let h4 = hash_u32(h3.wrapping_add(0x1f83_d9ab));
+            let life = 1.6 + 3.0 * unit(h1);
+            let birth = unit(h2) * 2.5;
+            let age = time - birth;
+            if age < 0.0 {
+                gx += 1;
+                continue;
+            }
+            let ph = fract01(age / life);
+            let op = 1.0 - ph;
+            if op < 0.08 {
+                gx += 1;
+                continue;
+            }
             let cx = (gx as f32 + 0.5 + (unit(h1) - 0.5) * 0.95) * cell_m;
             let cy = (gy as f32 + 0.5 + (unit(h2) - 0.5) * 0.95) * cell_m;
-            let r = cell_m * (0.09 + 0.26 * unit(h3));
-            let vh = 0.45 + 0.35 * unit(hash_u32(h3 ^ 0x1f83_d9ab));
+            let r = cell_m * (0.09 + 0.25 * unit(h3));
+            let vh = (0.45 + 0.35 * unit(h4)) * op;
             splat_mist(hb, sb, gw, gh, cx, cy, r, vh);
             gx += 1;
         }
@@ -471,7 +515,7 @@ pub extern "C" fn ec_render(
     if width <= 0 || height <= 0 || pixels == 0 || params == 0 {
         return 0;
     }
-    if nparams < 20 {
+    if nparams < 22 {
         return 1;
     }
     let w = width as usize;
@@ -514,8 +558,10 @@ pub extern "C" fn ec_render(
     let sampling = p(17) as i32;
     let edge = p(18) as i32;
     let mix = clamp01(p(19) * 0.01);
+    let seed = clampf(p(20), 0.0, 100.0);
+    let delay = clampf(p(21), 0.0, 20.0);
     let t = if time.is_finite() {
-        clampf(time as f32, 0.0, 1.0e6)
+        clampf(time as f32 + delay, 0.0, 1.0e6)
     } else {
         0.0
     };
@@ -581,9 +627,9 @@ pub extern "C" fn ec_render(
             clamp01(trail * 0.01),
             clamp01(mist * 0.01),
             speed,
+            seed,
             t,
         );
-        blur3(hbuf, gbuf, gw, gh);
         make_gradients(hbuf, gbuf, gw, gh);
 
         if !blur_buf.is_null() {
@@ -780,7 +826,7 @@ pub extern "C" fn ec_render(
                     let lit = clamp01(dir * 2.2);
                     let edge_light = el2 * lit * rim * 0.65;
 
-                    let light_k = a * atten * (0.30 + 0.70 * gate);
+                    let light_k = a * atten * gate;
                     r += (spec * 0.98 + fres * 0.20 + edge_light * 0.85) * light_k;
                     g += (spec * 0.99 + fres * 0.28 + edge_light * 0.92) * light_k;
                     b += (spec * 1.00 + fres * 0.35 + edge_light * 1.00) * light_k;

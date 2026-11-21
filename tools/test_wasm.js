@@ -236,9 +236,9 @@ function loadPhoto(w, h) {
 
 function baseParams() {
   return {
-    amount: 120,
+    amount: 140,
     size: 45,
-    density: 50,
+    density: 40,
     streak: 50,
     trail: 60,
     mist: 60,
@@ -253,6 +253,8 @@ function baseParams() {
     sampling: 0,
     edge: 0,
     mix: 100,
+    seed: 0,
+    timeOffset: 4,
   };
 }
 
@@ -278,6 +280,8 @@ function flatten(d) {
     d.sampling,
     d.edge,
     d.mix,
+    d.seed,
+    d.timeOffset,
   ];
 }
 
@@ -290,12 +294,12 @@ const CASES = [
   { name: '03-rain-round', p: { streak: 0, density: 65 } },
   {
     name: '04-rain-streak',
-    p: { streak: 100, trail: 55, density: 50 },
+    p: { streak: 100, trail: 55, density: 40 },
     crop: [280, 40, 320, 300],
   },
   {
     name: '05-rain-longtrail',
-    p: { streak: 75, trail: 100, speed: 70, density: 50 },
+    p: { streak: 75, trail: 100, speed: 70, density: 40 },
     t: 1.2,
   },
   {
@@ -309,6 +313,11 @@ const CASES = [
     name: '09-rain-nolight',
     p: { highlight: 0, rim: 0, dispersion: 0 },
   },
+  { name: '13-rain-empty', p: { timeOffset: 0 }, t: 0.0 },
+  { name: '12-rain-motion-a', p: {}, t: 0.0 },
+  { name: '12-rain-motion-b', p: {}, t: 0.5 },
+  { name: '12-rain-motion-c', p: {}, t: 1.0 },
+  { name: '12-rain-motion-d', p: {}, t: 1.5 },
   {
     name: '10-rain-edge-transparent',
     p: { edge: 3, amount: 190, dispersion: 0 },
@@ -365,7 +374,7 @@ function main() {
 
   check('api version = 1', ex.ec_api_version() === 1, String(ex.ec_api_version()));
   check('manifest id', manifest.id === 'mos.rain', manifest.id);
-  check('17 ui params', manifest.params.length === 17, String(manifest.params.length));
+  check('19 ui params', manifest.params.length === 19, String(manifest.params.length));
 
   const mix0 = renderRaw(Object.assign(baseParams(), { mix: 0 }));
   check('mix=0 returns source', mix0.rc === 0 && samePixels(mix0.pix, card));
@@ -375,7 +384,7 @@ function main() {
   check('deterministic', samePixels(det0.pix, det1.pix));
   check(
     'default changes pixels',
-    det0.rc === 0 && changedRatio(det0.pix, card, W * H) > 0.2,
+    det0.rc === 0 && changedRatio(det0.pix, card, W * H) > 0.10,
     (changedRatio(det0.pix, card, W * H) * 100).toFixed(1) + '%'
   );
 

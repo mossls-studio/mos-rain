@@ -8,8 +8,8 @@
     "en": "mos_rain"
   },
   "description": {
-    "zh": "真实的雨天玻璃：细密水雾铺底，大小不一的水珠，少量贯穿画面的蜿蜒水流；水流上串着大水珠，靠近的水珠会融成不规则水洼。带色散、锐高光、暗轮廓与磨砂。",
-    "en": "Rain on a window: fine mist, beads of mixed sizes, and a few winding streams across the frame. Beads sit on the streams, and nearby beads merge into irregular puddles. Dispersion, sharp highlights, dark contours and frost."
+    "zh": "生成式雨天玻璃：水珠从零出现，小水珠偶尔下滑，积水多了变成持续下落的长水流；细雾瞬间出现后慢慢淡出。靠近的水珠会融成不规则水洼，带硬接触线、锐高光、色散与磨砂。",
+    "en": "Generative rain on glass: drops appear from nothing, small drops slip down now and then, and once enough water gathers it becomes a long stream that keeps falling. Mist pops in and slowly fades. Nearby drops merge into irregular puddles, with hard contact lines, sharp highlights, dispersion and frost."
   },
   "groups": {
     "雨滴": {
@@ -23,6 +23,10 @@
     "输出": {
       "zh": "输出",
       "en": "Output"
+    },
+    "随机": {
+      "zh": "随机",
+      "en": "Random"
     }
   },
   "params": {
@@ -152,6 +156,26 @@
       "name": {
         "zh": "混合 %",
         "en": "Mix %"
+      }
+    },
+    "seed": {
+      "name": {
+        "zh": "分布种子",
+        "en": "Distribution seed"
+      },
+      "desc": {
+        "zh": "整片雨的随机分布；改动它等于重新掷一次骰子。",
+        "en": "Random distribution of the whole rain field; change it to reroll."
+      }
+    },
+    "time_offset": {
+      "name": {
+        "zh": "起始时间 秒",
+        "en": "Start time s"
+      },
+      "desc": {
+        "zh": "模拟从第几秒开始。0 秒时画面是空的；调到 3–6 秒可以直接看到已经下起来的雨。",
+        "en": "Simulation time at frame 0. At 0 the glass is empty; set 3–6 s to start with rain already developed."
       }
     }
   }
