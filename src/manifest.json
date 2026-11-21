@@ -41,7 +41,7 @@
       "id": "streak",
       "name": "长条雨滴 %",
       "type": "slider",
-      "default": 35,
+      "default": 30,
       "min": 0,
       "max": 100,
       "decimals": 1,

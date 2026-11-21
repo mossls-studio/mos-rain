@@ -147,9 +147,14 @@ unsafe fn trail(
         let taper = 1.0 - t;
         // 用 sqrt 让中段保持宽度/高度，只有接近尾端才真正收细。
         let soft = sqrtf(taper);
-        let w = r * (0.02 + 0.32 * soft);
-        let hgt = 0.02 + 0.48 * soft;
-        let xc = cx + fsin(phase + t * 4.2) * sway * (1.0 - 0.45 * t);
+        // 浅而宽的湿痕：太窄太厚会变成一条黑线；浅脊只轻轻弯折背景，
+        // 边缘再靠高光提亮，才是真实雨痕的读法。
+        let lump = 1.0 + 0.28 * fsin(t * 9.0 + phase * 2.1);
+        let w = r * (0.08 + 0.38 * soft) * lump;
+        let hgt = 0.03 + 0.26 * soft;
+        let xc = cx
+            + fsin(phase + t * 3.2) * sway * (1.0 - 0.35 * t)
+            + fsin(phase * 1.7 + t * 7.5) * sway * 0.45 * (1.0 - t);
         let ia = 1.0 / (w * w);
         let x0 = maxf(0.0, floorf(xc - w)) as usize;
         let x1 = minf((gw - 1) as f32, ceilf(xc + w)) as usize;
@@ -282,8 +287,8 @@ unsafe fn build_height(
                 }
 
                 let phase = unit(h6) * TAU;
-                let len = r * (0.9 + trail01 * 5.0);
-                let sway = r * (0.12 + 0.14 * unit(hash_u32(h6 ^ 0x1429_29a5)));
+                let len = r * (1.0 + trail01 * 18.0);
+                let sway = r * (0.25 + 0.25 * unit(hash_u32(h6 ^ 0x1429_29a5)));
                 // 头部：竖直方向略拉长，像被重力拽住的水珠。
                 let ra = r * (0.85 + 0.20 * unit(h1));
                 let rb = r * (1.15 + 0.25 * unit(h2));

@@ -239,7 +239,7 @@ function baseParams() {
     amount: 120,
     size: 50,
     density: 48,
-    streak: 35,
+    streak: 30,
     trail: 40,
     mist: 50,
     speed: 25,

@@ -59,7 +59,7 @@ receives 20 f64 values; indices 0–19 follow the table order.
 | 1 | Refraction % | `amount` | slider | 120 | 0 – 300 | Overall displacement |
 | 2 | Drop size % | `size` | slider | 50 | 0 – 100 | Main drop radius relative to the grid |
 | 3 | Density % | `density` | slider | 48 | 0 – 100 | Number of main drops; high values merge into puddles |
-| 4 | Streaks % | `streak` | slider | 35 | 0 – 100 | Fraction of drops stretched by gravity |
+| 4 | Streaks % | `streak` | slider | 30 | 0 – 100 | Fraction of drops stretched by gravity |
 | 5 | Trail length % | `trail` | slider | 40 | 0 – 100 | Trail length relative to drop radius |
 | 6 | Fine mist % | `mist` | slider | 50 | 0 – 100 | Density of 2–4 px droplets |
 | 7 | Flow speed % | `speed` | slider | 25 | 0 – 200 | Sliding speed of streaks; 0 = frozen |
@@ -97,7 +97,7 @@ effect is skipped and the source is returned unchanged.
   layer bounds.
 - **Drizzle**: size 35–45, density 25–40, streak 15–25, trail 25–35, mist 70–90,
   speed 10–20, amount 90–110.
-- **Medium rain (default)**: 120 / 50 / 48 / 35 / 40 / 50 / 25.
+- **Medium rain (default)**: 120 / 50 / 48 / 30 / 40 / 50 / 25.
 - **Downpour**: amount 150–190, size 65–80, density 80–95, streak 55–70,
   trail 55–70, mist 80–100, speed 60–90. Most of the frame is covered; good for a
   “looking through a rainy window” shot.
