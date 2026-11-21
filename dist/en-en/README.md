@@ -1,9 +1,12 @@
 # mos_rain — Rain on Glass for EffectCraft
 
-Rain on a window, for real: a fine mist of tiny droplets, beads of mixed sizes,
-and a few drops stretched by gravity into thin, tapering tracks that slide slowly
-down the glass. Every drop is a dome in a full-resolution height field, fused by
-screen blending; slopes fade to zero at the rim, so the background is never torn.
+Rain on a window, for real: a fine mist underfoot, beads of many sizes pressed
+against the glass, and a handful of long streams winding down the frame. Streams
+swell and pinch along their length, occasionally fork, and carry larger bead
+nodes that fuse with the main run into uneven tracks. All three live in a
+full-resolution height field as analytic surfaces, merged by screen blending;
+dark contours, wet highlights, lit-side edge lines and dispersion together
+suggest the thickness of water.
 
 A pixel effect: it rewrites the layer's pixels and does not touch transform
 properties.
@@ -13,7 +16,7 @@ properties.
 | Effect ID | `mos.rain` |
 | Display name | mos_rain |
 | Category | MOS Deform |
-| Version | 1.0.0 |
+| Version | 2.0.0 |
 | Author | MOSSLS |
 | Plug-in ABI | 1 (`ec_api_version` = 1) |
 | manifest schema | 2 (parameter groups) |
@@ -45,35 +48,36 @@ dist/en-en/mos_rain.wasm   English name + English params
 dist/mos_rain/             compatibility alias (= zh-zh)
 ```
 
-Each wasm is about 24.9 KB; the manifest is embedded in the data section.
+Each wasm is about 28 KB; the manifest is embedded in the data section.
 
 ## Parameters
 
 17 UI parameters in three groups. `tint` expands to r / g / b / a, so `ec_render`
-receives 20 f64 values; indices 0–19 follow the table order.
+receives 20 f64 values; indices 0–19 follow the table order. (The `tint` alpha
+component is passed in but not used by the shader.)
 
-### Drops
+### Rain
 
 | # | Param | id | Type | Default | Range | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Refraction % | `amount` | slider | 120 | 0 – 300 | Overall displacement |
-| 2 | Drop size % | `size` | slider | 50 | 0 – 100 | Main drop radius relative to the grid |
-| 3 | Density % | `density` | slider | 48 | 0 – 100 | Number of main drops; high values merge into puddles |
-| 4 | Streaks % | `streak` | slider | 30 | 0 – 100 | Fraction of drops stretched by gravity |
-| 5 | Trail length % | `trail` | slider | 40 | 0 – 100 | Trail length relative to drop radius |
-| 6 | Fine mist % | `mist` | slider | 50 | 0 – 100 | Density of 2–4 px droplets |
-| 7 | Flow speed % | `speed` | slider | 25 | 0 – 200 | Sliding speed of streaks; 0 = frozen |
+| 1 | Refraction % | `amount` | slider | 120 | 0 – 300 | Overall displacement; scaled per drop |
+| 2 | Drop size % | `size` | slider | 45 | 0 – 100 | Base radius `rad_nom`, sets the overall scale |
+| 3 | Density % | `density` | slider | 50 | 0 – 100 | Keep ratio `0.10+0.90×density`, then coarse-grid thinning |
+| 4 | Streams % | `streak` | slider | 50 | 0 – 100 | Stream count `2+12×streak`, up to 14 |
+| 5 | Stream length % | `trail` | slider | 60 | 0 – 100 | Stream length, 62 %–100 % of frame height |
+| 6 | Fine mist % | `mist` | slider | 60 | 0 – 100 | Keep ratio of the mist grid; 0 leaves beads and streams only |
+| 7 | Flow speed % | `speed` | slider | 20 | 0 – 200 | Advance of the stream width/height texture; beads stay put |
 
 ### Glass
 
 | # | Param | id | Type | Default | Range | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 8 | Dispersion % | `dispersion` | slider | 12 | 0 – 100 | R / B refraction difference |
-| 9 | Highlight % | `highlight` | slider | 110 | 0 – 300 | Wet specular + sharp glint |
-| 10 | Rim light % | `rim` | slider | 50 | 0 – 300 | Fresnel rim, lit side only |
+| 8 | Dispersion % | `dispersion` | slider | 12 | 0 – 100 | R / B offset (±10 % × dispersion) |
+| 9 | Highlight % | `highlight` | slider | 95 | 0 – 300 | Wet base glint + sharp rim, `^8` and `^32` |
+| 10 | Rim light % | `rim` | slider | 40 | 0 – 300 | Lit-side edge line + a little directional Fresnel |
 | 11 | Light angle | `light_angle` | angle | 135 | 0 – 360 | 0° = right, 90° = up (screen space) |
-| 12 | Frost % | `frost` | slider | 0 | 0 – 100 | Blurs the drops only; background stays sharp |
-| 13 | Tint | `tint` | color | pale blue [0.72, 0.88, 1.0, 1.0] | — | Tints transmitted light in drops |
+| 12 | Frost % | `frost` | slider | 0 | 0 – 100 | Blurs the water only; background stays sharp |
+| 13 | Tint | `tint` | color | pale blue [0.72, 0.88, 1.0, 1.0] | — | Tints light transmitted through water |
 | 14 | Tint amount % | `tint_amount` | slider | 0 | 0 – 100 | Tint mix |
 
 ### Output
@@ -84,122 +88,151 @@ receives 20 f64 values; indices 0–19 follow the table order.
 | 16 | Edges | `edge_mode` | popup | 0 = stretch | Stretch / repeat / mirror / transparent |
 | 17 | Mix % | `mix` | slider | 100 (0 – 100) | Blend with the source |
 
-Parameters act only on drops: highlight, frost, tint and dispersion are gated by
-the local drop mask, so flat glass is neither brightened nor blurred. When
-`amount`, `frost` and `tint_amount` are all 0 and highlight/rim are off, the
-effect is skipped and the source is returned unchanged.
+Everything is gated by the local scale field (`s`), so flat glass is never
+brightened or blurred. When `amount`, `frost` and `tint_amount` are all 0 and
+highlight/rim are off, the effect is skipped and the source is returned
+unchanged.
 
 ## Usage
 
 - **Rain over the whole frame**: apply to an **adjustment layer** (Layer ▸ New ▸
   Adjustment Layer) or a precomp so the entire composite is refracted. Applied to
-  a single layer, only that layer's pixels move; dense drops may be clipped by the
+  a single layer, only that layer's pixels move; dense beads may be clipped by the
   layer bounds.
-- **Drizzle**: size 35–45, density 25–40, streak 15–25, trail 25–35, mist 70–90,
-  speed 10–20, amount 90–110.
-- **Medium rain (default)**: 120 / 50 / 48 / 30 / 40 / 50 / 25.
-- **Downpour**: amount 150–190, size 65–80, density 80–95, streak 55–70,
-  trail 55–70, mist 80–100, speed 60–90. Most of the frame is covered; good for a
-  “looking through a rainy window” shot.
-- **Mist only**: size 5–12, density 0, streak 0, mist 100, amount 80–110,
-  highlight 120–160.
-- **Long tracks**: streak 70–100, trail 80–100, speed 40–70.
-- **Frosted glass**: frost 30–70, highlight/rim 40–70 so blurred drops do not keep
-  a razor-sharp rim.
-- **Cold glass**: tint pale blue/cyan, tint_amount 10–25; only the drops are
-  tinted.
-- **Dispersion** 8–25 % looks natural; above 45 % is a stylized prism.
-- **Edges = transparent** suits transparent layers; with very large refraction the
-  drops may sample outside the frame and show transparent notches. Keep amount
-  below 150 in that case.
+- **Medium rain (default)**: 120 / 45 / 50 / 50 / 60 / 60 / 20. Works for most shots.
+- **Dense tracks, like the reference photo**: streams 75–100, stream length 70–100,
+  drop size 35–50, density 50–70. Streams cross the frame and bead nodes string
+  into uneven water lines; keep density near 50 so beads do not bury the tracks.
+- **Mist only**: drop size 5–10, density 0, streams 0, fine mist 100,
+  amount 80–110. Reads as a cold window just starting to fog.
+- **Big beads**: drop size 65–85, density 55–70, streams 20–35. Close-up macro,
+  with clean glass between beads.
+- **Frosted glass**: frost 30–70, with highlight/rim pulled back to 40–70. Frost
+  flattens the relief and dims the highlights while blurring the water into a
+  frosted streak; stay under 50 if you want the track structure to survive.
+- **Cold glass**: tint pale blue/cyan, tint_amount 10–25; only the water is tinted.
+- **Dispersion** 8–25 % looks natural; above 60 % the green channel starts to
+  drift (see Known limits).
+- **Frozen frame**: speed 0. The default 20 only lets stream width breathe
+  slowly; beads never translate.
+- **Edges = transparent** suits transparent layers; with large refraction the
+  water samples outside the frame and shows transparent notches. Lower
+  `amount` to clean it up.
 
 ## Algorithm
 
-**1. Full-resolution height field.** Drops are only a few pixels wide; half
-resolution would blur their rims, so the height field matches the frame. Main
-drops sit on a jittered grid: `cell = max(8, min(w,h) × 0.065)`, each cell kept by
-a hash threshold `0.15 + 0.85 × density`. Radius
-`r = cell × (0.18 + 0.50 × size) × (0.42 + 1.05 × hash) × (0.75 + 0.55 × block factor)`, times a 0.82 tightening
-factor so the default 55 % reads as medium rain instead of a sheet of bubbles.
+**1. Full-resolution height field.** Water is 1–20 px wide; half resolution would
+blur bead rims and stream cross-sections. The height, gradient and scale fields
+all match the frame (`gw = w`, `gh = h`). All three layers share
+`cell = max(8, min(w,h) × 0.058)` and a base radius
+`rad_nom = cell × (0.20 + 0.55 × size) × 0.82`.
 
-**2. Domes.** Each drop is an axis-aligned ellipse with normalized radius `q` and
-height `v = (1 − q²)(1 − q⁸) × vh`. The center keeps its slope (magnifying the
-background) while the rim slope fades to zero, so the boundary never tears.
-Drops are accumulated with screen blending `old + v − old·v`; overlapping drops
-merge into a fuller puddle instead of leaving a hard seam.
+**2. Screen blending.** Every layer writes with `old + v − old·v`: two
+overlapping beads fuse into a fuller puddle, a stream meeting a bead swells at
+the junction, and no hard seam is left behind. The formula also keeps height
+inside 0–1 independent of draw order.
 
-**3. Mist.** A denser jittered grid (about 0.22× the main cell), radius 1–3 px,
-height 0.35–0.7, kept by `mist`. Their curvature is high, but the local-scale
-field keeps their displacement near themselves, so they read as fine mist rather
-than wide ripples.
+**3. Mist.** A jittered grid with `cell_m = max(3, cell × 0.18)` and about ±0.48
+cell of jitter; radius `cell_m × (0.09 + 0.26 × hash)` (roughly 1–4 px), height
+0.45–0.80, kept by `mist`. Mist droplets are round domes and record their own
+radius in the scale field.
 
-**4. Streaks.** Drops with `hash < streak` are stretched: the head ellipse grows
-1.15–1.4× vertically and a track is drawn above it. The trail is not a chain of
-ellipsoids: each row takes the centerline and half-width, uses the same dome as a
-cross-section, and tapers width and height to 0 with `sqrt(1 − t)`, plus a gentle
-sin sway. The gradient is therefore one continuous film, not a string of beads.
-The head is drawn last and covers the trail root.
+**4. Beads.** The same jittered grid (spacing `cell`), kept when
+`hash ≤ 0.10 + 0.90 × density` and additionally thinned by a 4×4 coarse grid
+(`cm ≤ 0.30 + 0.70 × density`), so raising density first tightens the spacing,
+then closes it up. Radius
+`rad_nom × (0.38 + 0.95 × hash) × (0.72 + 0.55 × cm)`, with a 0.92–1.08
+horizontal factor. 25 % of them become vertical teardrops (vertical radius
+×1.22–1.44).
 
-**5. Sliding.** `slide = time × speed × 0.5 × (0.5 + hash)` pixels; head and trail
-move together, wrapping at `h + 12r` back to 6r above the frame. Round drops only
-drift by up to 0.6 px.
+**5. Streams.** `2 + 12 × streak` of them (at most 14), length
+`h × (0.62 + 0.38 × trail)`; the start may sit above the frame, so some streams
+are cut short. The centerline sums two sines:
+`x = x0 + amp × (0.62·sin(0.017y + φ) + 0.38·sin(0.043y + 1.7φ))` with
+`amp = rad_nom × (0.5 + 1.4 × hash)` — the slow term draws the big meander, the
+fast one the wiggle. Half-width is `rad_nom × (0.40 + 0.35 × hash)`, modulated
+along the run by two more sines (frequencies `0.023` and `0.0065`) down to
+22 %–100 %. The cross-section is a semicircle `sqrt(1 − q²)`, not a dome: the
+edges are steeper, which gives a crisp dark contour and a lit edge. Height is
+about 0.6–0.9× the width, times a 0.82–1.0 ripple along the run, so streams
+thicken and thin, rise and fall.
 
-**6. Gradients and local scale.** The height field is replaced in place by
-`∂h/∂x` / `∂h/∂y`. During splatting each drop writes its own radius into a second
-`strength` field (max). At render time:
+**6. Bead nodes and forks.** A bead grows on the stream every 42–97 px (about
+75 % of the time), with a radius 1.15–1.90× the local half-width, stretched
+1.12× vertically; screen blending turns the run into a “thick–thin–thick” track
+instead of a constant band. About 55 % of streams longer than 80 px fork: a
+branch leaves the main run, drifts sideways at `0.32 × distance travelled`,
+starts at 55 % of the width and tapers to 35 %, forming the Y-shaped network of
+the reference photo. Another 2–5 isolated large beads land at random.
 
-- displacement `d = 0.30 · s² · (amount/100) · ∇h`, where `s` is the local radius;
+**7. Local scale field.** Each write also records a scale (max): mist stores its
+radius, beads their long semi-axis, streams `1.5 × half-width`, branches
+`1.4 × half-width`. At render time, per pixel:
+
+- gate `gate = clamp01(0.6s)`;
+- displacement `d = 0.30 · (amount/100) · s² · ∇h` (times `1 − 0.35 × frost`);
 - normal `n = normalize(−∇h · 0.6s, 1)`;
 - displacement clamp `dmax = 2.2s`.
 
-A 2 px mist droplet only disturbs its own neighborhood; a 15 px bead gets the
-displacement of a thick lens. A single global scale would make tiny droplets twist
-the background into 10 px halos and turn the frame into bubble wrap.
+Refraction scales with `s²` and normals with `s`, so a 2 px mist droplet only
+disturbs its own neighborhood while a 15 px bead gets the displacement of a
+thick lens. A single global scale would twist the background into halos around
+every tiny droplet.
 
-**7. Sampling and dispersion.** The displaced sample follows `sampling`. With
-dispersion, R uses `1 − ca` of the displacement and B uses `1 + ca`; G is the
-average of the two samples. The two chromatic samples are only a few pixels apart,
-so they stay bilinear; bicubic is reserved for the main sample.
+**8. Sampling and dispersion.** The displaced sample follows `sampling`. With
+dispersion, R uses `1 − ca` of the displacement and B uses `1 + ca`
+(`ca = 0.10 × dispersion / 100`), with G the average of the two samples; at
+dispersion ≤ 5 the second sample is skipped. The chromatic samples are only a few pixels apart,
+so they stay bilinear — bicubic is reserved for the main sample.
 
-**8. Frost.** The source is downsampled 2×, blurred with four box passes
-(prefix sums + fractional window edges), then sampled at the refracted coordinate
-and blended into the sharp result. The blend is gated by the drop mask, so only
-drops go soft. Frost also lowers highlight/rim and flattens the normals.
+**9. Frost.** The source is downsampled 2×, blurred with a separable box pass
+(radius `frost × 0.035 × min_dim × 0.5`), then sampled at the refracted
+coordinate and blended into the sharp result. The mix is gated by the local
+`gate`, so only water goes soft. Frost also scales highlight/rim by
+`1 − 0.75 × frost` and normals by `1 − 0.35 × frost`, flattening the relief.
 
-**9. Lighting.**
+**10. Lighting.**
 
-- Sharp glint: distance in slope space from the ideal reflection direction,
-  smoothed into a few-pixel wet highlight;
-- Fresnel: Schlick's fifth power, lit side only;
-- Rim ring: normal squared `n² > 0.85`, controlled by `rim`;
-- A darker contour on the shadow side gives drops volume on bright backgrounds;
-- Tiny mist droplets get a small scattering lift so they do not vanish on dark
-  glass;
-- Added light is attenuated by background luminance (`1 − 0.68·luma`) so bright
+- **Dark contour**: once the slope term `n2` (squared tangential normal) passes
+  0.90, smoothstep darkens it, giving beads a black edge and volume instead of a
+  ring of white bubbles. It is gated too, so mist does not turn into a dark film.
+- **Highlight**: Blinn half-vector, `^8` for the wet base and `^32` for the sharp
+  rim, added and scaled by `highlight`. Slope distance is deliberately not used,
+  which avoids a single needle-point glint in one direction.
+- **Lit-side edge line**: slopes with `n2 > 1.60` multiplied by
+  `clamp01(2.2 × half-vector)` — cylindrical streams have no y normal, so plain
+  Blinn never lights them.
+- **Fresnel**: Schlick's fifth power weighted by `0.4 + 1.2 × half-vector`, just
+  enough directionality, no full white ring.
+- Added light is attenuated by background luminance (`1 − 0.60 × luma`) so bright
   areas do not burn to pure white.
 
-**10. Output.** Tint is applied to drops only; RGB is clamped to `[0, a]` in
+**11. Animation.** `drift = time × speed × 0.6` only feeds the stream width
+function, so width and height texture creep along; bead positions are fixed and
+the frame never slides as a whole. Speed 0 freezes it.
+
+**12. Output.** Tint applies to water only; RGB is clamped to `[0, a]` in
 premultiplied alpha, then blended with the source by `mix`.
 
 ## Performance
 
 The host runs plug-ins in the **wasmi interpreter**; the same kernel is about an
-order of magnitude faster in Node/V8. Numbers below are V8 (Node 22.22.2, Windows
-11), one `ec_render` call, median of 5 runs, on a 960×540 / 1920×1080 photo,
-excluding compositing and PNG encoding:
+order of magnitude faster in Node/V8. Numbers below are V8 (Node 22, Windows 11),
+one `ec_render` call at 960×540 / 1920×1080, excluding PNG encoding and
+compositing:
 
-| Resolution | Default | Dense | All streaks | Mist only | Frost 65% | Bicubic | No light |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 960×540 | 87 ms | 95 ms | 77 ms | 63 ms | 89 ms | 58 ms | 30 ms |
-| 1920×1080 | 272 ms | 268 ms | 244 ms | 218 ms | 321 ms | 246 ms | 128 ms |
+| Resolution | Default | Dense / big beads | Mist only | Frost 65 % |
+| --- | --- | --- | --- | --- |
+| 960×540 | 56–70 ms | 70–95 ms | ~55 ms | 90–110 ms |
+| 1920×1080 | 230–270 ms | ~320 ms | — | — |
 
-(“All streaks” = `streak 100 / trail 55`; “Mist only” = `size 8 / density 0 /
-mist 100`; no light = `highlight 0 / rim 0 / dispersion 0`.)
+(“Dense / big beads” = high `streak` + high `density`, or `size` above 70.)
 
-Frost is the most expensive feature (half-res four-pass blur + one extra sample).
-Dispersion = 0 saves a sample; highlight/rim both 0 skips the whole lighting block
-and is about 3× faster. The full-resolution height field is the main cost, but it
-only splats — no per-pixel trigonometry.
+Per-pixel cost comes mainly from two places: two texture samples per pixel when
+dispersion is on, and building the three-layer height field plus its gradients at
+full resolution (splat coverage grows with bead count). Dispersion 0 saves a
+sample; highlight/rim both 0 skips the whole lighting block; frost adds a
+half-res blur and one more sample and is the most expensive option.
 
 **Preview advice.** 1080p full resolution through an interpreter is not real-time.
 Drop the playback resolution to **50 %** (1/4 of the pixels) first; then disable
@@ -213,7 +246,7 @@ src/kit.rs             shared kernel: arena, math, sampling, blur, gradients (fr
 src/manifest.json      params and metadata (injected into wasm at build time)
 src/i18n.json          four-language overlay
 build.js               localized manifest → cargo build → dist
-tools/test_wasm.js     fake host: ABI, self-checks, 10 renders, per-frame timing
+tools/test_wasm.js     fake host: ABI, 8 checks, 10 cases, per-frame timing
 tools/engine_check.jsx engine smoke test: load → apply → 3 images
 dist/                  installable artifacts
 tests/assets/          photo-*.rgba reference frames (git-ignored)
@@ -250,6 +283,10 @@ Self-checks (8):
 7. `streak` from 35 to 0 visibly changes the image;
 8. all effect amounts 0 returns the source.
 
+Ten render cases in total (default, dense, round beads, all streams, long
+streams, mist only, frost, bicubic, no light, transparent edges), written to
+`tests/out/`.
+
 Compile check (no dist, verifies no_std and no warnings):
 
 ```bash
@@ -269,24 +306,22 @@ Output goes to `tests/out/engine/`: `rain-default.png`, `rain-streak.png`,
 
 ## Known limits
 
-- Refraction is a 2D height-field gradient approximation — no ray tracing, total
-  internal reflection or environment reflection. Thickness is suggested by the
-  dome, ring, highlight and dispersion.
-- Drop size is stylized. The default 55 % at 960×540 is close to macro; for a
-  true window scale, lower `size` to 30–40.
-- At high density, screen blending saturates overlapping drops into a plateau;
-  that is the intended puddle look, but extreme `density 100` + `size 100` becomes
-  one large sheet.
-- Streak trails are analytic height ridges, not a fluid sim; very long trails
-  (`trail 100`) can feel slightly regular, and the sway is a single sine.
-- Mist is only 1–3 px at 960×540 and may read as noise after heavy compression;
-  raise the render resolution or lower `mist`.
-- Frost is a half-res blur mix, not a BRDF; high `frost` erases drop detail.
-- `Edges = transparent` with large displacement can sample outside the frame and
-  produce transparent notches.
-- Per-pixel cost is high; 1080p real-time preview is unrealistic (see above).
+- Streams are analytic ridges in a 2D height field, not a fluid sim. Forks, bead
+  nodes and width variation are procedural; watch the same patch long enough and
+  the repetition shows.
+- Beads are elliptical domes merged by screen blending; they never truly stretch
+  into irregular puddles or filaments.
+- Very dense streams overlap into a single sheet; lower `density` when `streak`
+  is high and let the tracks carry the frame.
+- Dispersion takes two samples; above 60 % the green channel is an average of the
+  two and colour drifts slightly.
+- `Edges = transparent` with large displacement samples outside the frame and
+  leaves notches at the water's edge.
+- Frost is a half-res blur mix, not a BRDF; high `frost` erases tracks and bead
+  detail alike.
 - Lighting is additive; on a near-white background the rim approaches 1.0 but the
   whole drop is not overexposed.
+- Per-pixel cost is high; 1080p real-time preview is unrealistic (see above).
 
 ---
 

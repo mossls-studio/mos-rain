@@ -1,6 +1,6 @@
 [package]
 name = "mos_rain"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2021"
 license = "AGPL-3.0-or-later"
 description = "mos_rain — rain on a window: mist, beads and sliding streaks for EffectCraft (wasm plug-in, ABI 1)"
