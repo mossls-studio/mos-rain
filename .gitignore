@@ -1,0 +1,6 @@
+node_modules/
+build/
+scratch/
+tests/out/
+*.rgba
+*.log

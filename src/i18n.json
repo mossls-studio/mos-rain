@@ -1,0 +1,38 @@
+{
+  "category": { "zh": "MOS 形变", "en": "MOS Deform" },
+  "name": { "zh": "mos_雨滴", "en": "mos_rain" },
+  "description": {
+    "zh": "真实的雨天玻璃：细密水雾、大小不一的圆水珠，以及会缓慢下滑的长条雨滴和拖尾。分布、密度、大小、长条比例、拖尾长度各自独立，带色散、高光与边缘光。",
+    "en": "Rain on a window: fine mist, round beads of mixed sizes, and slow sliding streaks with trails. Independent density, size, streak ratio, trail length, plus dispersion, highlights and rim light."
+  },
+  "groups": {
+    "雨滴": { "zh": "雨滴", "en": "Drops" },
+    "质感": { "zh": "质感", "en": "Glass" },
+    "输出": { "zh": "输出", "en": "Output" }
+  },
+  "params": {
+    "amount": { "name": { "zh": "折射强度 %", "en": "Refraction %" } },
+    "size": { "name": { "zh": "雨滴大小 %", "en": "Drop size %" } },
+    "density": { "name": { "zh": "分布密度 %", "en": "Density %" } },
+    "streak": { "name": { "zh": "长条雨滴 %", "en": "Streaks %" } },
+    "trail": { "name": { "zh": "拖尾长度 %", "en": "Trail length %" } },
+    "mist": { "name": { "zh": "细小雨滴 %", "en": "Fine mist %" } },
+    "speed": { "name": { "zh": "流速 %", "en": "Flow speed %" } },
+    "dispersion": { "name": { "zh": "色散 %", "en": "Dispersion %" } },
+    "highlight": { "name": { "zh": "高光 %", "en": "Highlight %" } },
+    "rim": { "name": { "zh": "边缘光 %", "en": "Rim light %" } },
+    "light_angle": { "name": { "zh": "光照角度", "en": "Light angle" } },
+    "frost": { "name": { "zh": "磨砂 %", "en": "Frost %" } },
+    "tint": { "name": { "zh": "色调", "en": "Tint" } },
+    "tint_amount": { "name": { "zh": "染色 %", "en": "Tint amount %" } },
+    "sampling": {
+      "name": { "zh": "采样", "en": "Sampling" },
+      "options": { "zh": ["双线性", "双三次", "最近邻"], "en": ["Bilinear", "Bicubic", "Nearest"] }
+    },
+    "edge_mode": {
+      "name": { "zh": "边缘", "en": "Edges" },
+      "options": { "zh": ["拉伸", "重复", "镜像", "透明"], "en": ["Stretch", "Repeat", "Mirror", "Transparent"] }
+    },
+    "mix": { "name": { "zh": "混合 %", "en": "Mix %" } }
+  }
+}

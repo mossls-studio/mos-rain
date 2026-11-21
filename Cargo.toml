@@ -1,0 +1,17 @@
+[package]
+name = "mos_rain"
+version = "1.0.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+description = "mos_rain — rain on a window: mist, beads and sliding streaks for EffectCraft (wasm plug-in, ABI 1)"
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
