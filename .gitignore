@@ -1,6 +1,8 @@
 node_modules/
+helper/target/
 build/
 scratch/
 tests/out/
 *.rgba
 *.log
+*.pam

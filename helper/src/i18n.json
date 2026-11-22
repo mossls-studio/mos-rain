@@ -8,10 +8,11 @@
     "en": "mos_rain"
   },
   "description": {
-    "zh": "真实雨天玻璃窗：有机重力形变雨滴、凸透镜倒像折射、三通道色散与粘滑下落水痕；大雨滴、小雨滴与长条雨滴分别可调密度、大小、相位与置换强度，水流经过会自然擦净雾气并融合小水珠。",
-    "en": "Realistic rain on window glass: gravity-deformed organic drops, convex-lens inverted refraction, 3-channel dispersion and stick-slip falling streaks. Large drops, small drops and streaks each have independent density, size, phase and displacement controls, wiping fog and absorbing small droplets along their path."
+    "zh": "真实雨天玻璃窗：支持自定义图层按亮度或 Alpha 提取轮廓，把自定义光照与边缘套用液态折射、三通道色散与弯月面高光；也内置大雨滴、小雨滴与粘滑流动长条雨滴，可单独或融合使用。",
+    "en": "Realistic rain on window glass: supports a custom map layer extracted by Luminance or Alpha to derive liquid contours and lighting for convex refraction, 3-channel dispersion and meniscus specular shading, plus built-in procedural large drops, small drops and flowing streaks."
   },
   "groups": {
+    "自定义贴图": { "zh": "自定义贴图", "en": "Custom Map" },
     "大雨滴": { "zh": "大雨滴", "en": "Large Drops" },
     "小雨滴": { "zh": "小雨滴", "en": "Small Drops" },
     "长条雨滴": { "zh": "长条雨滴", "en": "Streaks" },
@@ -19,6 +20,25 @@
     "输出": { "zh": "输出", "en": "Output" }
   },
   "params": {
+    "custom_layer": { "name": { "zh": "自定义图层", "en": "Custom layer" } },
+    "custom_mode": {
+      "name": { "zh": "来源模式", "en": "Source mode" },
+      "options": {
+        "zh": ["仅自定义贴图", "与程序雨滴融合", "仅程序雨滴"],
+        "en": ["Custom only", "Blend with procedural", "Procedural only"]
+      }
+    },
+    "custom_channel": {
+      "name": { "zh": "提取方式", "en": "Extract from" },
+      "options": {
+        "zh": ["亮度", "Alpha"],
+        "en": ["Luminance", "Alpha"]
+      }
+    },
+    "custom_invert": { "name": { "zh": "反转提取", "en": "Invert map" } },
+    "custom_threshold": { "name": { "zh": "边缘阈值 %", "en": "Edge threshold %" } },
+    "custom_bevel": { "name": { "zh": "边缘曲率 px", "en": "Edge curvature px" } },
+    "custom_disp": { "name": { "zh": "自定义置换强度 %", "en": "Custom displacement %" } },
     "big_density": { "name": { "zh": "大雨滴密度 %", "en": "Large density %" } },
     "big_size": { "name": { "zh": "大雨滴大小 %", "en": "Large size %" } },
     "big_phase": { "name": { "zh": "大雨滴相位", "en": "Large phase" } },
