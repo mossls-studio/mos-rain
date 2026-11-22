@@ -8,175 +8,50 @@
     "en": "mos_rain"
   },
   "description": {
-    "zh": "生成式雨天玻璃：水珠从零出现，小水珠偶尔下滑，积水多了变成持续下落的长水流；细雾瞬间出现后慢慢淡出。靠近的水珠会融成不规则水洼，带硬接触线、锐高光、色散与磨砂。",
-    "en": "Generative rain on glass: drops appear from nothing, small drops slip down now and then, and once enough water gathers it becomes a long stream that keeps falling. Mist pops in and slowly fades. Nearby drops merge into irregular puddles, with hard contact lines, sharp highlights, dispersion and frost."
+    "zh": "真实雨天玻璃窗：有机重力形变雨滴、凸透镜倒像折射、三通道色散与粘滑下落水痕；大雨滴、小雨滴与长条雨滴分别可调密度、大小、相位与置换强度，水流经过会自然擦净雾气并融合小水珠。",
+    "en": "Realistic rain on window glass: gravity-deformed organic drops, convex-lens inverted refraction, 3-channel dispersion and stick-slip falling streaks. Large drops, small drops and streaks each have independent density, size, phase and displacement controls, wiping fog and absorbing small droplets along their path."
   },
   "groups": {
-    "雨滴": {
-      "zh": "雨滴",
-      "en": "Drops"
-    },
-    "质感": {
-      "zh": "质感",
-      "en": "Glass"
-    },
-    "输出": {
-      "zh": "输出",
-      "en": "Output"
-    },
-    "随机": {
-      "zh": "随机",
-      "en": "Random"
-    }
+    "大雨滴": { "zh": "大雨滴", "en": "Large Drops" },
+    "小雨滴": { "zh": "小雨滴", "en": "Small Drops" },
+    "长条雨滴": { "zh": "长条雨滴", "en": "Streaks" },
+    "流动与光学": { "zh": "流动与光学", "en": "Flow & Optics" },
+    "输出": { "zh": "输出", "en": "Output" }
   },
   "params": {
-    "amount": {
-      "name": {
-        "zh": "折射强度 %",
-        "en": "Refraction %"
-      }
-    },
-    "size": {
-      "name": {
-        "zh": "雨滴大小 %",
-        "en": "Drop size %"
-      }
-    },
-    "density": {
-      "name": {
-        "zh": "分布密度 %",
-        "en": "Density %"
-      }
-    },
-    "streak": {
-      "name": {
-        "zh": "水流数量 %",
-        "en": "Streams %"
-      }
-    },
-    "trail": {
-      "name": {
-        "zh": "水流长度 %",
-        "en": "Stream length %"
-      }
-    },
-    "mist": {
-      "name": {
-        "zh": "细小雨滴 %",
-        "en": "Fine mist %"
-      }
-    },
-    "speed": {
-      "name": {
-        "zh": "流速 %",
-        "en": "Flow speed %"
-      }
-    },
-    "dispersion": {
-      "name": {
-        "zh": "色散 %",
-        "en": "Dispersion %"
-      }
-    },
-    "highlight": {
-      "name": {
-        "zh": "高光 %",
-        "en": "Highlight %"
-      }
-    },
-    "rim": {
-      "name": {
-        "zh": "边缘光 %",
-        "en": "Rim light %"
-      }
-    },
-    "light_angle": {
-      "name": {
-        "zh": "光照角度",
-        "en": "Light angle"
-      }
-    },
-    "frost": {
-      "name": {
-        "zh": "磨砂 %",
-        "en": "Frost %"
-      }
-    },
-    "tint": {
-      "name": {
-        "zh": "色调",
-        "en": "Tint"
-      }
-    },
-    "tint_amount": {
-      "name": {
-        "zh": "染色 %",
-        "en": "Tint amount %"
-      }
-    },
+    "big_density": { "name": { "zh": "大雨滴密度 %", "en": "Large density %" } },
+    "big_size": { "name": { "zh": "大雨滴大小 %", "en": "Large size %" } },
+    "big_phase": { "name": { "zh": "大雨滴相位", "en": "Large phase" } },
+    "big_disp": { "name": { "zh": "大雨滴置换强度 %", "en": "Large displacement %" } },
+    "small_density": { "name": { "zh": "小雨滴密度 %", "en": "Small density %" } },
+    "small_size": { "name": { "zh": "小雨滴大小 %", "en": "Small size %" } },
+    "small_phase": { "name": { "zh": "小雨滴相位", "en": "Small phase" } },
+    "small_disp": { "name": { "zh": "小雨滴置换强度 %", "en": "Small displacement %" } },
+    "streak_density": { "name": { "zh": "长条密度 %", "en": "Streak density %" } },
+    "streak_size": { "name": { "zh": "长条大小 %", "en": "Streak size %" } },
+    "streak_phase": { "name": { "zh": "长条相位", "en": "Streak phase" } },
+    "streak_disp": { "name": { "zh": "长条置换强度 %", "en": "Streak displacement %" } },
+    "flow_speed": { "name": { "zh": "下落流速 %", "en": "Flow speed %" } },
+    "displacement": { "name": { "zh": "总置换强度 %", "en": "Master displacement %" } },
+    "dispersion": { "name": { "zh": "色散强度 %", "en": "Dispersion %" } },
+    "highlight": { "name": { "zh": "高光强度 %", "en": "Highlight %" } },
+    "light_angle": { "name": { "zh": "光照角度", "en": "Light angle" } },
+    "bg_blur": { "name": { "zh": "玻璃雾气 %", "en": "Glass fog %" } },
+    "seed": { "name": { "zh": "随机种子", "en": "Random seed" } },
     "sampling": {
-      "name": {
-        "zh": "采样",
-        "en": "Sampling"
-      },
+      "name": { "zh": "采样", "en": "Sampling" },
       "options": {
-        "zh": [
-          "双线性",
-          "双三次",
-          "最近邻"
-        ],
-        "en": [
-          "Bilinear",
-          "Bicubic",
-          "Nearest"
-        ]
+        "zh": ["双线性", "双三次", "最近邻"],
+        "en": ["Bilinear", "Bicubic", "Nearest"]
       }
     },
     "edge_mode": {
-      "name": {
-        "zh": "边缘",
-        "en": "Edges"
-      },
+      "name": { "zh": "边缘", "en": "Edges" },
       "options": {
-        "zh": [
-          "拉伸",
-          "重复",
-          "镜像",
-          "透明"
-        ],
-        "en": [
-          "Stretch",
-          "Repeat",
-          "Mirror",
-          "Transparent"
-        ]
+        "zh": ["拉伸", "重复", "镜像", "透明"],
+        "en": ["Stretch", "Repeat", "Mirror", "Transparent"]
       }
     },
-    "mix": {
-      "name": {
-        "zh": "混合 %",
-        "en": "Mix %"
-      }
-    },
-    "seed": {
-      "name": {
-        "zh": "分布种子",
-        "en": "Distribution seed"
-      },
-      "desc": {
-        "zh": "整片雨的随机分布；改动它等于重新掷一次骰子。",
-        "en": "Random distribution of the whole rain field; change it to reroll."
-      }
-    },
-    "time_offset": {
-      "name": {
-        "zh": "起始时间 秒",
-        "en": "Start time s"
-      },
-      "desc": {
-        "zh": "模拟从第几秒开始。0 秒时画面是空的；调到 3–6 秒可以直接看到已经下起来的雨。",
-        "en": "Simulation time at frame 0. At 0 the glass is empty; set 3–6 s to start with rain already developed."
-      }
-    }
+    "mix": { "name": { "zh": "混合 %", "en": "Mix %" } }
   }
 }

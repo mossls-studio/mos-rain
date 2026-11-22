@@ -5,10 +5,6 @@
 //   node build.js                 构建 4 种语言组合
 //   node build.js --variant=zh-en 只构建「中文名称 + 英文参数」一种
 //   node build.js --lang=zh       兼容旧用法（= zh-zh），--lang=en = en-en
-//
-// 语言覆盖表在 src/i18n.json：分组/效果名/描述用 names 语言，参数名/选项用 params 语言。
-// Rust 侧通过 MOS_MANIFEST_FILE 把 manifest 用 include_bytes! 静态编进 wasm，
-// 所以每种语言组合都要单独编译一次（Rust 会因 env 变化重编该 crate）。
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
@@ -83,11 +79,10 @@ function buildVariant(variant, base, overlay) {
   }
   const wasm = fs.readFileSync(artifact);
 
-  // 保险带：确认这份产物里嵌的确实是本语言组合的 manifest。
   if (wasm.indexOf(mbytes) < 0) {
     console.error(
       `[${variant}] 产物里没有嵌进本语言的 manifest —— cargo 复用了旧产物。\n` +
-        `试试 rm -rf build/target 后重跑。`
+        `试试清理 build/target 后重跑。`
     );
     process.exit(1);
   }
@@ -103,8 +98,6 @@ function buildVariant(variant, base, overlay) {
     fs.copyFileSync(readmeSrc, path.join(distDir, 'README.md'));
   }
 
-  // 工具直接指向 dist/zh-zh/mos_rain.wasm 的同时也留一份扁平副本，
-  // 以及同级插件都在用的 dist/<name>/ 别名目录。
   if (variant === 'zh-zh') {
     const flat = path.join(ROOT, 'dist', WASM_NAME);
     fs.copyFileSync(path.join(distDir, WASM_NAME), flat);

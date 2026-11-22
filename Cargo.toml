@@ -1,9 +1,9 @@
 [package]
 name = "mos_rain"
-version = "3.0.0"
+version = "4.0.0"
 edition = "2021"
 license = "AGPL-3.0-or-later"
-description = "mos_rain — rain on a window: mist, beads and sliding streaks for EffectCraft (wasm plug-in, ABI 1)"
+description = "mos_rain — organic rain on window glass with convex-lens refraction and dispersion for EffectCraft (wasm plug-in, ABI 1)"
 
 [lib]
 crate-type = ["cdylib"]
